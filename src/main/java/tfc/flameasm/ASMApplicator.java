@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 public class ASMApplicator {
 	public static byte[] apply(String s, byte[] bytes) {
 		// These things should occur in the order they are listed in
+		if (bytes == null) return null;
 		byte[] srcBytes = bytes;
 		bytes = MappingApplicator.apply(s, bytes);
 		// TODO: access modifiers (basically annotation based access transformers, afaik, org.ow2.asm is not powerful enough for this, as it doesn't keep default field initializers)
