@@ -6,16 +6,17 @@ import net.minecraft.resource.ResourceName;
 //TODO: remove this
 public class DummyClass {
 	public static void main(String[] args) {
+		System.out.println(name);
 		String test = "2";
 		Object o = new Object();
 		System.out.println(o.toString());
 		System.out.println(test + "1");
 		
 		ResourceName name = new ResourceName("test:test");
-		System.out.println(name.getNamespace());
-		System.out.println(name.getPath());
+		System.out.println(name.namespace());
+		System.out.println(name.path());
 		
-		System.out.println(MainRegistry.blocks);
+		System.out.println(MainRegistry.BLOCKS);
 		
 		System.out.println((long)0);
 		int val = 0;
@@ -34,7 +35,7 @@ public class DummyClass {
 		// it is very deliberate that I'm not just using toString
 		// I know toString gives the exact same result
 		// I just wanna maximize references for testing purposes
-		System.out.println(name.getNamespace() + ":" + name.getPath());
+		System.out.println(name.namespace() + ":" + name.path());
 	}
 	
 	public static void test() {
@@ -42,4 +43,7 @@ public class DummyClass {
 		System.out.println(name);
 		Class<?> clazz = ResourceName.class;
 	}
+	
+	// TODO: use access modifiers to make this field public static instead of private static final
+	private static final ResourceName name = new ResourceName("test:test");
 }

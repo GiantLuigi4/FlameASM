@@ -45,8 +45,27 @@ public class MappingApplicator {
 		ClassNode node = new ClassNode();
 		reader.accept(node, 0);
 		StringBuilder classDescriptor = new StringBuilder();
-		classDescriptor.append("Class: ").append(name).append("\n");
 		boolean wasRemapped = false;
+		{
+			ArrayList<String> interfaces = new ArrayList<>();
+			for (String typeName : node.interfaces) {
+				typeName = classMapper.apply(typeName);
+				if (typeName != null) {
+					interfaces.add(typeName);
+					wasRemapped = true;
+				}
+			}
+			node.interfaces = interfaces;
+		}
+		{
+			String typeName = node.superName;
+			typeName = classMapper.apply(typeName);
+			if (typeName != null) {
+				node.superName = typeName;
+				wasRemapped = true;
+			}
+		}
+		classDescriptor.append("Class: ").append(name).append("\n");
 		for (MethodNode method : node.methods) {
 			classDescriptor.append(" ").append(method.name).append(":").append("\n");
 			{
@@ -59,6 +78,14 @@ public class MappingApplicator {
 							desc.typeNames[index] = "L" + typeName + ";";
 							wasRemapped = true;
 						}
+					}
+				}
+				String typeName = desc.returnType;
+				if (typeName.startsWith("L") && typeName.endsWith(";")) {
+					typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1));
+					if (typeName != null) {
+						desc.returnType = "L" + typeName + ";";
+						wasRemapped = true;
 					}
 				}
 				method.desc = desc.toString();
@@ -135,6 +162,14 @@ public class MappingApplicator {
 								}
 							}
 						}
+						String typeName = desc.returnType;
+						if (typeName.startsWith("L") && typeName.endsWith(";")) {
+							typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1));
+							if (typeName != null) {
+								desc.returnType = "L" + typeName + ";";
+								wasRemapped = true;
+							}
+						}
 						insn.desc = desc.toString();
 					}
 					
@@ -174,10 +209,19 @@ public class MappingApplicator {
 				} else if (instruction instanceof IntInsnNode) {
 					IntInsnNode insn = (IntInsnNode)instruction;
 					classDescriptor.append("    operand: ").append(insn.operand).append("\n");
-				}
-				else {
+				} else {
 					System.out.println(opcodeToName.get(instruction.getOpcode()));
 					System.out.println(instruction.getClass());
+				}
+			}
+		}
+		for (FieldNode field : node.fields) {
+			String typeName = field.desc;
+			if (typeName.startsWith("L") && typeName.endsWith(";")) {
+				typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1));
+				if (typeName != null) {
+					field.desc = "L" + typeName + ";";
+					wasRemapped = true;
 				}
 			}
 		}
