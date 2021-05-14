@@ -10,11 +10,11 @@ public class ResourceName {
 	}
 	
 	//Methods
-	public java.lang.String getPath() {
+	public java.lang.String path() {
 		return null;
 	}
 	
-	public java.lang.String getNamespace() {
+	public java.lang.String namespace() {
 		return null;
 	}
 }
