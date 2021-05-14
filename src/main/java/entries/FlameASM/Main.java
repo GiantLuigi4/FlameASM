@@ -9,6 +9,9 @@ import tfc.flame.IFlameAPIMod;
 import tfc.flame.IFlameMod;
 import tfc.flameasm.ASMApplicator;
 import tfc.flameasm.CSVReader;
+import tfc.flameasm.Descriptor;
+import tfc.flameasm.hookins.HookinApplicator;
+import tfc.flameasm.hookins.HookinReader;
 import tfc.flameasm.remapper.MappingApplicator;
 import tfc.flamemc.FlameLauncher;
 
@@ -20,7 +23,11 @@ public class Main implements IFlameMod, IFlameAPIMod {
 	@Override
 	public void setupAPI(String[] args) {
 		try {
-			String s = new String();
+			java.lang.Class<?> clazz = String.class;
+			clazz = Descriptor.class;
+			clazz = HookinReader.class;
+			clazz = HookinApplicator.class;
+			clazz = CSVReader.class;
 		} catch (Throwable err) {
 		}
 		ClassLoader loader = Main.class.getClassLoader();
