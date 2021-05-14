@@ -41,6 +41,7 @@ public class HookinReader {
 		
 		ArrayList<InsertHolder> insertHolders;
 		{
+			if (node.visibleAnnotations == null) return bytes;
 			String targ = "";
 			String hookinAnnotationName = "L" + (Hookin.class.getTypeName().replace(".","/")) + ";";
 			for (AnnotationNode visibleAnnotation : node.visibleAnnotations) {
