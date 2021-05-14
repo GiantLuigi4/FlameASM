@@ -3,6 +3,7 @@ package entries.FlameASM;
 import net.minecraft.registry.MainRegistry;
 import net.minecraft.resource.ResourceName;
 
+//TODO: remove this
 public class DummyClass {
 	public static void main(String[] args) {
 		String test = "2";

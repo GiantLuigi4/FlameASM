@@ -1,5 +1,6 @@
 package net.minecraft.resource;
 
+//TODO: remove this
 public class ResourceName {
 	//Constructors
 	public ResourceName(java.lang.String string) {
