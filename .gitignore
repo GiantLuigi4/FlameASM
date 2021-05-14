@@ -4,3 +4,7 @@
 /out/
 /out/production/classes/
 /out/test/classes/
+/flameasm/
+/libraries/
+/run/
+/.idea/
