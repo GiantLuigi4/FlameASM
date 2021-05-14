@@ -1,4 +1,4 @@
-package entries.FlameASM;
+package testing;
 
 import net.minecraft.registry.MainRegistry;
 import net.minecraft.resource.ResourceName;
@@ -29,6 +29,11 @@ public class DummyClass {
 		System.out.println((long)val);
 		test();
 		printName(name);
+	}
+	
+	public static void print5Things() {
+		// oh no, someone forgot to fill out this method
+		// better make a hookin to fill it out
 	}
 	
 	public static void printName(ResourceName name) {

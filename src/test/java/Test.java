@@ -7,7 +7,7 @@ import java.io.File;
 
 public class Test {
 	public static void main(String[] args) {
-		System.out.println(MappingApplicator.parseDescriptor(
+		System.out.println(ASMApplicator.parseDescriptor(
 				"(Ljava/lang/String;IIJ)I"
 		));
 		

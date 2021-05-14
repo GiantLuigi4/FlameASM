@@ -5,7 +5,9 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
+import tfc.flameasm.ASMApplicator;
 import tfc.flameasm.Descriptor;
+import tfc.flamemc.FlameLauncher;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -14,13 +16,13 @@ import java.util.HashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static tfc.flameasm.ASMApplicator.parseDescriptor;
 import static tfc.flameasm.ASMApplicator.writeBytes;
 
 public class MappingApplicator {
 	public static Function<String, String> classMapper;
 	public static BiFunction<String, String, String> methodMapper;
 	public static BiFunction<String, String, String> fieldMapper;
-	public static Function<String, String> classToMappingInfoFunc;
 	
 	static HashMap<Integer, String> opcodeToName = new HashMap<>();
 	
@@ -37,10 +39,20 @@ public class MappingApplicator {
 	}
 	
 	public static byte[] apply(String name, byte[] bytes) {
-		if (classToMappingInfoFunc == null) return bytes;
 		if (classMapper == null) return bytes;
-		String mappingInfo = classToMappingInfoFunc.apply(name); // TODO: handling with this
-		if (mappingInfo == null) return bytes;
+		String mappingInfo; // TODO: handling with this
+		{
+			File jar = ASMApplicator.jarGetter.apply(name);
+			if (jar == null) return bytes;
+			try {
+				byte[] bytes1 = FlameLauncher.getSourceFile(jar, "mapping_info.properties");
+				if (bytes == null) return null;
+				mappingInfo = new String(bytes1);
+			} catch (NullPointerException ignored) {
+				return bytes;
+			}
+		}
+		if (mappingInfo == null) return bytes; // TODO: remove this once the purpose of mappingInfo is implemented
 		ClassReader reader = new ClassReader(bytes);
 		ClassNode node = new ClassNode();
 		reader.accept(node, 0);
@@ -230,32 +242,5 @@ public class MappingApplicator {
 		ClassWriter result = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 		node.accept(result);
 		return result.toByteArray();
-	}
-	
-	public static Descriptor parseDescriptor(String desc) {
-		String types = desc.substring(1, desc.indexOf(")"));
-		boolean isInDescriptor = false;
-		StringBuilder parsing = new StringBuilder();
-		ArrayList<String> typesArray = new ArrayList<>();
-		for (char c : types.toCharArray()) {
-			if (isInDescriptor) {
-				if (c == ';') {
-					isInDescriptor = false;
-					parsing.append(';');
-					typesArray.add(parsing.toString());
-					parsing.delete(0, parsing.length());
-					continue;
-				}
-				parsing.append(c);
-			} else {
-				if (c == 'L') {
-					isInDescriptor = true;
-					parsing.append('L');
-					continue;
-				}
-				typesArray.add("" + c);
-			}
-		}
-		return new Descriptor(typesArray.toArray(new String[0]), desc.substring(desc.lastIndexOf(")") + 1));
 	}
 }

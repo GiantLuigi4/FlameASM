@@ -3,18 +3,18 @@ package entries.FlameASM;
 import com.tfc.mappings.structure.*;
 import com.tfc.mappings.structure.Class;
 import com.tfc.mappings.types.Intermediary;
+import testing.DummyClass;
 import tfc.flame.FlameURLLoader;
 import tfc.flame.IFlameAPIMod;
 import tfc.flame.IFlameMod;
 import tfc.flameasm.ASMApplicator;
+import tfc.flameasm.CSVReader;
 import tfc.flameasm.remapper.MappingApplicator;
 import tfc.flamemc.FlameLauncher;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
+import java.util.Enumeration;
 
 public class Main implements IFlameMod, IFlameAPIMod {
 	@Override
@@ -85,19 +85,40 @@ public class Main implements IFlameMod, IFlameAPIMod {
 						if (selected == null) return null;
 						return selected.getSecondary();
 					};
-					MappingApplicator.classToMappingInfoFunc = (name)->{
-						String jarEntry = name.replace(".","/") + ".class";
+					ASMApplicator.jarGetter = (className)->{
+						String jarEntry = className.replace(".","/") + ".class";
 						File jar = FlameLauncher.getJarForEntry(jarEntry);
 						if (jar == null) return null;
-						try {
-							byte[] bytes = FlameLauncher.getSourceFile(jar, "mapping_info.properties");
-							if (bytes == null) return null;
-							return new String(bytes);
-						} catch (NullPointerException ignored) {
-							System.out.println("File " + jar.toString() + " did not contain a mapping_info.properties");
-							return null;
-						}
+						return jar;
 					};
+					Enumeration<URL> urls = Main.class.getClassLoader().getResources("hookins.csv");
+					((FlameURLLoader) loader).getAsmAppliers().put("flameasm:asm", ASMApplicator::apply);
+					while (urls.hasMoreElements()) {
+						URL url = urls.nextElement();
+						InputStream stream = url.openStream();
+						ByteArrayOutputStream stream1 = new ByteArrayOutputStream();
+						try {
+							int b;
+							while ((b = stream.read()) != -1) stream1.write(b);
+							String firstEntry = null;
+							for (String entry : new CSVReader(new String(stream1.toByteArray())).entries) {
+								if (firstEntry == null) firstEntry = entry;
+								else java.lang.Class.forName(firstEntry + "." + entry);
+							}
+						} catch (Throwable ignored) {
+						} finally {
+							stream.close();
+							stream1.close();
+							stream1.flush();
+						}
+					}
+//					HashMap<File, HashMap<String, byte[]>> files = (HashMap<File, HashMap<String, byte[]>>) f.get(null);
+//					for (File file : files.keySet()) {
+//						byte[] bytes = FlameLauncher.getSourceFile(file, "hookins.csv");
+//						if (bytes == null) continue;
+//
+//					}
+					return;
 				}
 			} catch (Throwable ignored) {
 			}
