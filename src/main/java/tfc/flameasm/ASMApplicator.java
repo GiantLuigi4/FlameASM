@@ -19,7 +19,7 @@ public class ASMApplicator {
 		bytes = MappingApplicator.apply(s, bytes);
 		// TODO: access modifiers (basically annotation based access transformers, afaik, org.ow2.asm is not powerful enough for this, as it doesn't keep default field initializers)
 		// TODO: hookins (weaker mixins which are runtime mapped instead of having a refmap, and can be directly referenced)
-		// These are very poorly written, and do not work at all
+		// These are very poorly written
 		// Feel free to use these as a base, or don't
 		// Hookins should add a method to the class being hooked into which runs the code of the hookin, then call that method from the method being hooked into
 		// Then the reference renamer should make it so that any classes which directly call a method from a hookin, don't call it on the hookin, but instead on the class being hooked into
