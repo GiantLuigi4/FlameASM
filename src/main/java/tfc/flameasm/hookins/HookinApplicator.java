@@ -21,8 +21,14 @@ public class HookinApplicator {
 		ASM asm = new ASM(bytes);
 		for (InsertHolder holder : holders) {
 			InsnList list = new InsnList();
-			list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, name, holder.callName, holder.callDesc));
+			list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, name.replace(".","/"), holder.callName, holder.callDesc));
 			asm.transformMethod(holder.methodName, holder.methodDescriptor, list, holder.point.equals("TOP"));
+//			for (AbstractInsnNode instruction : holder.method.instructions) {
+//				if (instruction instanceof MethodInsnNode) {
+//					MethodInsnNode insn = ((MethodInsnNode) instruction);
+//					if (insn.owner.equals(holder.hookinClassName.replace(".","/"))) insn.owner = name.replace(".","/");
+//				}
+//			}
 //			asm.transformMethod(holder.methodName, holder.methodDescriptor, holder.method.instructions, holder.point.equals("TOP"));
 		}
 		bytes = asm.toBytes();
@@ -52,7 +58,8 @@ public class HookinApplicator {
 			for (AbstractInsnNode instruction : methodNode.instructions) {
 				if (instruction instanceof MethodInsnNode) {
 					MethodInsnNode insn = ((MethodInsnNode) instruction);
-					if (insn.owner.equals(holder.hookinClassName.replace(".","/"))) insn.owner = name.replace("/",".");
+					if (insn.owner.equals(holder.hookinClassName.replace(".","/")))
+						insn.owner = name.replace(".","/");
 				}
 			}
 			node.methods.add(methodNode);

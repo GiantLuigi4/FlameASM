@@ -43,6 +43,15 @@ public class Main implements IFlameMod, IFlameAPIMod {
 							isVersion = true;
 						} else if (isVersion) {
 							String version = s;
+							if (version.contains("OptiFine")) {
+								version = version.replace("OptiFine","");
+								String ver = "";
+								for (char c : version.toCharArray()) {
+									if (c == '.' || Character.isDigit(c)) ver += c;
+									else break;
+								}
+								version = ver;
+							}
 							versionMap = version.replace("-flame", "");
 							isVersion = false;
 						}
