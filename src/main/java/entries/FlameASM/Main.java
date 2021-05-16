@@ -1,8 +1,9 @@
 package entries.FlameASM;
 
-import com.tfc.mappings.structure.*;
 import com.tfc.mappings.structure.Class;
+import com.tfc.mappings.structure.*;
 import com.tfc.mappings.types.Intermediary;
+import modifiers.AccessTransform;
 import testing.DummyClass;
 import tfc.flame.FlameURLLoader;
 import tfc.flame.IFlameAPIMod;
@@ -28,7 +29,7 @@ public class Main implements IFlameMod, IFlameAPIMod {
 			clazz = HookinReader.class;
 			clazz = HookinApplicator.class;
 			clazz = CSVReader.class;
-		} catch (Throwable err) {
+		} catch (Throwable ignored) {
 		}
 		ClassLoader loader = Main.class.getClassLoader();
 		if (loader instanceof FlameURLLoader) {
@@ -103,9 +104,7 @@ public class Main implements IFlameMod, IFlameAPIMod {
 					};
 					ASMApplicator.jarGetter = (className)->{
 						String jarEntry = className.replace(".","/") + ".class";
-						File jar = FlameLauncher.getJarForEntry(jarEntry);
-						if (jar == null) return null;
-						return jar;
+						return FlameLauncher.getJarForEntry(jarEntry);
 					};
 					Enumeration<URL> urls = Main.class.getClassLoader().getResources("hookins.csv");
 					((FlameURLLoader) loader).getAsmAppliers().put("flameasm:asm", ASMApplicator::apply);
@@ -170,6 +169,13 @@ public class Main implements IFlameMod, IFlameAPIMod {
 	
 	@Override
 	public void postinit(String[] strings) {
+		java.lang.Class<DummyClass> c = DummyClass.class;
+		for (java.lang.reflect.Field f : c.getDeclaredFields()) {
+			f.setAccessible(true);
+			if (f.isAnnotationPresent(AccessTransform.class)) {
+				System.out.println("yes");
+			}
+		}
 		DummyClass.main(strings);
 	}
 }

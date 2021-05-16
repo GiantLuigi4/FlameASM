@@ -1,7 +1,10 @@
 package testing;
 
+import modifiers.AccessTransform;
 import net.minecraft.registry.MainRegistry;
 import net.minecraft.resource.ResourceName;
+
+import java.lang.reflect.Modifier;
 
 //TODO: remove this
 public class DummyClass {
@@ -50,5 +53,6 @@ public class DummyClass {
 	}
 	
 	// TODO: use access modifiers to make this field public static instead of private static final
+	@AccessTransform(Modifier.PUBLIC | Modifier.STATIC)
 	private static final ResourceName name = new ResourceName("test:test");
 }
