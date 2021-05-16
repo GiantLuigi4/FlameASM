@@ -8,6 +8,8 @@ import org.objectweb.asm.tree.*;
 import tfc.flameasm.ASMApplicator;
 import tfc.flameasm.Descriptor;
 import tfc.flamemc.FlameLauncher;
+import tfc.mappings.structure.MappingsClass;
+import tfc.mappings.structure.MappingsHolder;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -20,9 +22,47 @@ import static tfc.flameasm.ASMApplicator.parseDescriptor;
 import static tfc.flameasm.ASMApplicator.writeBytes;
 
 public class MappingApplicator {
-	public static Function<String, String> classMapper;
-	public static BiFunction<String, String, String> methodMapper;
-	public static BiFunction<String, String, String> fieldMapper;
+	public static BiFunction<String, MappingsSteps, String> classMapper;
+	public static BiFunction<String, MappingsSteps, String> methodMapper;
+	public static BiFunction<String, MappingsSteps, String> fieldMapper;
+	
+	public static String targetMappings = "OBFUSCATION";
+	private static final HashMap<String, MappingsInfo> mappingsSystems = new HashMap<>();
+	
+	public static void registerMappings(MappingsInfo info) {
+		mappingsSystems.put(info.name, info);
+	}
+	
+	public static MappingsInfo getInfo(String mappings) {
+		return mappingsSystems.get(mappings);
+	}
+	
+	public static MappingsSteps getSteps(String src, String targ) {
+		MappingsSteps stepsO = new MappingsSteps();
+		ArrayList<String> steps = stepsO.steps;
+		MappingsInfo next = getInfo(src);
+		steps.add(next.name);
+		while (!next.builtOn.equals("OBFUSCATION")) {
+			steps.add(next.builtOn);
+			next = getInfo(next.builtOn);
+		}
+		steps.add(next.builtOn);
+		if (targetMappings.equals("OBFUSCATION")) {
+			return stepsO;
+		}
+		ArrayList<MappingsInfo> infos = new ArrayList<>();
+		next = getInfo(targ);
+		while (!next.builtOn.equals("OBFUSCATION")) {
+			infos.add(next);
+			next = getInfo(next.name);
+		}
+		for (int index = infos.size() - 1; index >= 0; index--) {
+			MappingsInfo info = infos.get(index);
+			steps.add(info.builtOn);
+		}
+		steps.add(targ);
+		return stepsO;
+	}
 	
 	static HashMap<Integer, String> opcodeToName = new HashMap<>();
 	
@@ -58,10 +98,11 @@ public class MappingApplicator {
 		reader.accept(node, 0);
 		StringBuilder classDescriptor = new StringBuilder();
 		boolean wasRemapped = false;
+		MappingsSteps steps = getSteps("FLAME", targetMappings);
 		{
 			ArrayList<String> interfaces = new ArrayList<>();
 			for (String typeName : node.interfaces) {
-				typeName = classMapper.apply(typeName);
+				typeName = classMapper.apply(typeName, steps);
 				if (typeName != null) {
 					interfaces.add(typeName);
 					wasRemapped = true;
@@ -71,7 +112,7 @@ public class MappingApplicator {
 		}
 		{
 			String typeName = node.superName;
-			typeName = classMapper.apply(typeName);
+			typeName = classMapper.apply(typeName, steps);
 			if (typeName != null) {
 				node.superName = typeName;
 				wasRemapped = true;
@@ -85,7 +126,7 @@ public class MappingApplicator {
 				for (int index = 0; index < desc.typeNames.length; index++) {
 					String typeName = desc.typeNames[index];
 					if (typeName.startsWith("L") && typeName.endsWith(";")) {
-						typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1));
+						typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1), steps);
 						if (typeName != null) {
 							desc.typeNames[index] = "L" + typeName + ";";
 							wasRemapped = true;
@@ -94,7 +135,7 @@ public class MappingApplicator {
 				}
 				String typeName = desc.returnType;
 				if (typeName.startsWith("L") && typeName.endsWith(";")) {
-					typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1));
+					typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1), steps);
 					if (typeName != null) {
 						desc.returnType = "L" + typeName + ";";
 						wasRemapped = true;
@@ -117,7 +158,7 @@ public class MappingApplicator {
 					if (insn.cst instanceof Type) {
 						String clazz = ((Type) insn.cst).getDescriptor();
 						if (clazz.startsWith("L") && clazz.endsWith(";")) {
-							clazz = classMapper.apply(clazz.substring(1, clazz.length() - 1));
+							clazz = classMapper.apply(clazz.substring(1, clazz.length() - 1), steps);
 							if (clazz != null) {
 								clazz = "L" + clazz + ";";
 								insn.cst = Type.getType(clazz);
@@ -130,20 +171,20 @@ public class MappingApplicator {
 					FieldInsnNode insn = ((FieldInsnNode)instruction);
 					String clazz;
 					if (insn.desc.startsWith("L") && insn.desc.endsWith(";")) {
-						clazz = classMapper.apply(insn.desc.substring(1, insn.desc.length() - 1));
+						clazz = classMapper.apply(insn.desc.substring(1, insn.desc.length() - 1), steps);
 						if (clazz != null) {
 							insn.desc = "L" + clazz + ";";
 							wasRemapped = true;
 						}
 					}
 					
-					clazz = fieldMapper.apply(insn.owner, insn.name);
+					clazz = fieldMapper.apply(insn.owner + ";" + insn.name, steps);
 					if (clazz != null) {
 						insn.name = clazz;
 						wasRemapped = true;
 					}
 					
-					clazz = classMapper.apply(insn.owner);
+					clazz = classMapper.apply(insn.owner, steps);
 					if (clazz != null) {
 						insn.owner = clazz;
 						wasRemapped = true;
@@ -156,7 +197,7 @@ public class MappingApplicator {
 					MethodInsnNode insn = (MethodInsnNode) instruction;
 					String clazz;
 					
-					clazz = methodMapper.apply(insn.owner, insn.name);
+					clazz = methodMapper.apply(insn.owner + ";" + insn.name + insn.desc, steps);
 					if (clazz != null) {
 						insn.name = clazz;
 						wasRemapped = true;
@@ -167,7 +208,7 @@ public class MappingApplicator {
 						for (int index = 0; index < desc.typeNames.length; index++) {
 							String typeName = desc.typeNames[index];
 							if (typeName.startsWith("L") && typeName.endsWith(";")) {
-								typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1));
+								typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1), steps);
 								if (typeName != null) {
 									desc.typeNames[index] = "L" + typeName + ";";
 									wasRemapped = true;
@@ -176,7 +217,7 @@ public class MappingApplicator {
 						}
 						String typeName = desc.returnType;
 						if (typeName.startsWith("L") && typeName.endsWith(";")) {
-							typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1));
+							typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1), steps);
 							if (typeName != null) {
 								desc.returnType = "L" + typeName + ";";
 								wasRemapped = true;
@@ -185,7 +226,7 @@ public class MappingApplicator {
 						insn.desc = desc.toString();
 					}
 					
-					clazz = classMapper.apply(insn.owner);
+					clazz = classMapper.apply(insn.owner, steps);
 					if (clazz != null) {
 						insn.owner = clazz;
 						wasRemapped = true;
@@ -198,7 +239,7 @@ public class MappingApplicator {
 					TypeInsnNode insn = (TypeInsnNode)instruction;
 					
 					String clazz;
-					clazz = classMapper.apply(insn.desc);
+					clazz = classMapper.apply(insn.desc, steps);
 					if (clazz != null) {
 						insn.desc = clazz;
 						wasRemapped = true;
@@ -230,7 +271,7 @@ public class MappingApplicator {
 		for (FieldNode field : node.fields) {
 			String typeName = field.desc;
 			if (typeName.startsWith("L") && typeName.endsWith(";")) {
-				typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1));
+				typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1), steps);
 				if (typeName != null) {
 					field.desc = "L" + typeName + ";";
 					wasRemapped = true;
@@ -242,5 +283,44 @@ public class MappingApplicator {
 		ClassWriter result = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 		node.accept(result);
 		return result.toByteArray();
+	}
+	
+	public static String mapDesc(String desc, MappingsHolder holder) {
+		Descriptor descr = parseDescriptor(desc);
+		for (int index = 0; index < descr.typeNames.length; index++) {
+			String typeName = descr.typeNames[index];
+			boolean isNonPrimitive = false;
+			if (typeName.startsWith("L") && typeName.endsWith(";")) {
+				typeName = typeName.substring(1, typeName.length() - 1);
+				isNonPrimitive = true;
+			}
+			MappingsClass clazz = holder.getFromPrimaryName(typeName);
+			if (clazz != null) typeName = "L" + clazz.getSecondaryName() + ";";
+			else {
+				clazz = holder.getFromSecondaryName(typeName);
+				if (clazz != null) typeName = "L" + clazz.getPrimaryName() + ";";
+				else if (isNonPrimitive){
+					typeName = "L" + typeName + ";";
+				}
+			}
+			descr.typeNames[index] = typeName;
+		}
+		String typeName = descr.returnType;
+		boolean isNonPrimitive = false;
+		if (typeName.startsWith("L") && typeName.endsWith(";")){
+			typeName = typeName.substring(1, typeName.length() - 1);
+			isNonPrimitive = true;
+		}
+		MappingsClass clazz = holder.getFromPrimaryName(typeName);
+		if (clazz != null) typeName = "L" + clazz.getSecondaryName() + ";";
+		else {
+			clazz = holder.getFromSecondaryName(typeName);
+			if (clazz != null) typeName = "L" + clazz.getPrimaryName() + ";";
+			else if (isNonPrimitive) {
+				typeName = "L" + typeName + ";";
+			}
+		}
+		descr.returnType = typeName;
+		return descr.toString();
 	}
 }

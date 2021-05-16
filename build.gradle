@@ -19,7 +19,7 @@ targetCompatibility = JavaVersion.VERSION_1_8
 ext {
     flameMCVersion = '0840e53c1e'
     bytecodeUtilsVersion = '455c3d13b7'
-    MCMappingsHelperVersion = '3edf7efa3d'
+    MCMappingsHelperVersion = 'c9a20212d2'
 }
 
 dependencies {
@@ -30,6 +30,7 @@ dependencies {
     implementation "com.github.GiantLuigi4:MCMappingsHelper:$MCMappingsHelperVersion"
 
     compileOnly files('run/versions/1.16.4-flame/1.16.4-flame.jar')
+    compileOnly files('run/versions/1.16.5-srg/1.16.5-srg.jar')
 
     // TODO: create some form of gradle thing which minifies this into a single line
     implementation 'com.mojang:patchy:1.1'
