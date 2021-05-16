@@ -295,6 +295,9 @@ public class MappingApplicator {
 			else {
 				clazz = holder.getFromSecondaryName(typeName);
 				if (clazz != null) typeName = "L" + clazz.getPrimaryName() + ";";
+				else {
+					typeName = "L" + typeName + ";";
+				}
 			}
 			descr.typeNames[index] = typeName;
 		}
@@ -305,6 +308,9 @@ public class MappingApplicator {
 		else {
 			clazz = holder.getFromSecondaryName(typeName);
 			if (clazz != null) typeName = "L" + clazz.getPrimaryName() + ";";
+			else {
+				typeName = "L" + typeName + ";";
+			}
 		}
 		descr.returnType = typeName;
 		return descr.toString();
