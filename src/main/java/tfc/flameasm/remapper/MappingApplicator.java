@@ -47,6 +47,9 @@ public class MappingApplicator {
 			next = getInfo(next.builtOn);
 		}
 		steps.add(next.builtOn);
+		if (targetMappings.equals("OBFUSCATION")) {
+			return stepsO;
+		}
 		ArrayList<MappingsInfo> infos = new ArrayList<>();
 		next = getInfo(targ);
 		while (!next.builtOn.equals("OBFUSCATION")) {
@@ -286,20 +289,22 @@ public class MappingApplicator {
 		Descriptor descr = parseDescriptor(desc);
 		for (int index = 0; index < descr.typeNames.length; index++) {
 			String typeName = descr.typeNames[index];
+			if (typeName.startsWith("L") && typeName.endsWith(";")) typeName = typeName.substring(1, typeName.length() - 1);
 			MappingsClass clazz = holder.getFromPrimaryName(typeName);
-			if (clazz != null) typeName = clazz.getSecondaryName();
+			if (clazz != null) typeName = "L" + clazz.getSecondaryName() + ";";
 			else {
 				clazz = holder.getFromSecondaryName(typeName);
-				if (clazz != null) typeName = clazz.getPrimaryName();
+				if (clazz != null) typeName = "L" + clazz.getPrimaryName() + ";";
 			}
 			descr.typeNames[index] = typeName;
 		}
 		String typeName = descr.returnType;
+		if (typeName.startsWith("L") && typeName.endsWith(";")) typeName = typeName.substring(1, typeName.length() - 1);
 		MappingsClass clazz = holder.getFromPrimaryName(typeName);
-		if (clazz != null) typeName = clazz.getSecondaryName();
+		if (clazz != null) typeName = "L" + clazz.getSecondaryName() + ";";
 		else {
 			clazz = holder.getFromSecondaryName(typeName);
-			if (clazz != null) typeName = clazz.getPrimaryName();
+			if (clazz != null) typeName = "L" + clazz.getPrimaryName() + ";";
 		}
 		descr.returnType = typeName;
 		return descr.toString();

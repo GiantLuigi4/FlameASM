@@ -2,10 +2,15 @@ package testing;
 
 import net.minecraft.registry.BuiltinRegistries;
 import net.minecraft.resource.ResourceName;
+import net.minecraft.vecmath.Matrix4;
+import net.minecraft.vecmath.Vector3d;
 
 //TODO: remove this
 public class DummyClass {
 	public static void main(String[] args) {
+		System.out.println((new Vector3d(1.0D, 2.0D, 3.0D)).dotProduct(new Vector3d(0.0D, 0.0D, 0.0D)));
+		System.out.println(Matrix4.perspectiveMatrix(90, 1, 0.01f, 1000));
+		
 		System.out.println(name);
 		String test = "2";
 		Object o = new Object();
