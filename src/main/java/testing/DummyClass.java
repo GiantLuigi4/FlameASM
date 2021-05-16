@@ -1,6 +1,6 @@
 package testing;
 
-import net.minecraft.registry.MainRegistry;
+import net.minecraft.registry.BuiltinRegistries;
 import net.minecraft.resource.ResourceName;
 
 //TODO: remove this
@@ -16,7 +16,7 @@ public class DummyClass {
 		System.out.println(name.namespace());
 		System.out.println(name.path());
 		
-		System.out.println(MainRegistry.BLOCKS);
+		System.out.println(BuiltinRegistries.BLOCKS);
 		
 		System.out.println((long)0);
 		int val = 0;

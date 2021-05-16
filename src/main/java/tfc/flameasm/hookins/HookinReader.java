@@ -10,13 +10,14 @@ import tfc.flameasm.CSVReader;
 import tfc.flameasm.Descriptor;
 import tfc.flameasm.annotations.hookin.Hookin;
 import tfc.flameasm.hookins.utils.InsertHolder;
+import tfc.flameasm.remapper.MappingsSteps;
 import tfc.flamemc.FlameLauncher;
 
 import java.io.File;
 import java.util.ArrayList;
 
 import static tfc.flameasm.ASMApplicator.parseDescriptor;
-import static tfc.flameasm.remapper.MappingApplicator.classMapper;
+import static tfc.flameasm.remapper.MappingApplicator.*;
 
 public class HookinReader {
 	public static byte[] apply(String name, byte[] bytes) {
@@ -61,6 +62,7 @@ public class HookinReader {
 				HookinApplicator.insertMap.put(targ, insertHolders);
 			} else insertHolders = HookinApplicator.insertMap.get(targ);
 		}
+		MappingsSteps steps = getSteps("FLAME", targetMappings);
 		
 		for (MethodNode method : node.methods) {
 			if (method.name.equals("<init>")) continue; // TODO: initializer insert
@@ -86,7 +88,7 @@ public class HookinReader {
 							for (int index = 0; index < desc.typeNames.length; index++) {
 								String typeName = desc.typeNames[index];
 								if (typeName.startsWith("L") && typeName.endsWith(";")) {
-									typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1));
+									typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1), steps);
 									if (typeName != null) {
 										desc.typeNames[index] = "L" + typeName + ";";
 									}
@@ -94,7 +96,7 @@ public class HookinReader {
 							}
 							String typeName = desc.returnType;
 							if (typeName.startsWith("L") && typeName.endsWith(";")) {
-								typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1));
+								typeName = classMapper.apply(typeName.substring(1, typeName.length() - 1), steps);
 								if (typeName != null) {
 									desc.returnType = "L" + typeName + ";";
 								}

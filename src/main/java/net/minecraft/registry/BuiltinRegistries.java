@@ -1,6 +1,6 @@
 package net.minecraft.registry;
 
 //TODO: remove this
-public class MainRegistry {
+public class BuiltinRegistries {
 	public static DefaultedRegistry BLOCKS;
 }

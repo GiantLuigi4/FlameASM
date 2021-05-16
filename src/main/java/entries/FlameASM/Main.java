@@ -1,8 +1,9 @@
 package entries.FlameASM;
 
-import com.tfc.mappings.structure.*;
-import com.tfc.mappings.structure.Class;
-import com.tfc.mappings.types.Intermediary;
+import tfc.flameasm.remapper.MappingsInfo;
+import tfc.flameasm.remapper.MappingsSteps;
+import tfc.mappings.structure.*;
+import tfc.mappings.types.Intermediary;
 import testing.DummyClass;
 import tfc.flame.FlameURLLoader;
 import tfc.flame.IFlameAPIMod;
@@ -14,6 +15,8 @@ import tfc.flameasm.hookins.HookinApplicator;
 import tfc.flameasm.hookins.HookinReader;
 import tfc.flameasm.remapper.MappingApplicator;
 import tfc.flamemc.FlameLauncher;
+import tfc.mappings.structure.FlameMapHolder;
+import tfc.mappings.types.Searge;
 
 import java.io.*;
 import java.net.URL;
@@ -33,7 +36,7 @@ public class Main implements IFlameMod, IFlameAPIMod {
 		ClassLoader loader = Main.class.getClassLoader();
 		if (loader instanceof FlameURLLoader) {
 			try {
-				java.lang.Class<?> clazz = java.lang.Class.forName("com.tfc.mappings.structure.FlameMapHolder");
+				java.lang.Class<?> clazz = java.lang.Class.forName("tfc.mappings.structure.FlameMapHolder");
 				if (clazz != null) {
 					FlameMapHolder flame = new FlameMapHolder(readUrl("https://raw.githubusercontent.com/GiantLuigi4/FlameAPI-MC-Rewrite/master/mappings/flame_mappings.mappings"));
 					boolean isVersion = false;
@@ -43,64 +46,272 @@ public class Main implements IFlameMod, IFlameAPIMod {
 							isVersion = true;
 						} else if (isVersion) {
 							String version = s;
-							if (version.contains("OptiFine")) {
-								version = version.replace("OptiFine","");
-								String ver = "";
-								for (char c : version.toCharArray()) {
-									if (c == '.' || Character.isDigit(c)) ver += c;
-									else break;
-								}
-								version = ver;
+							if (version.startsWith("fabric-loader")) {
+								version = version.substring("fabric-loader-".length());
+								version = version.substring(version.indexOf("-") + 1);
 							}
+							String ver = "";
+							for (char c : version.toCharArray()) {
+								if (c == '.' || Character.isDigit(c)) ver += c;
+								else break;
+							}
+							version = ver;
 							versionMap = version.replace("-flame", "");
 							isVersion = false;
 						}
 					}
-					Holder intermediary = Intermediary.generate(versionMap);
-					MappingApplicator.classMapper = (name) -> {
-						Class clazzFlame = flame.getFromSecondaryName(name);
-						if (clazzFlame == null) return null;
-						String interName = clazzFlame.getPrimaryName();
-						Class interClass = intermediary.getFromPrimaryName(interName);
-						if (interClass == null) return null;
-						return interClass.getSecondaryName();
-					};
-					MappingApplicator.methodMapper = (name, methodName) -> {
-						//TODO: make this work for when there are multiple methods with the same name
-						Class clazzFlame = flame.getFromSecondaryName(name);
-						if (clazzFlame == null) return null;
-						String interName = clazzFlame.getPrimaryName();
-						Method m = clazzFlame.getMethodPrimary(methodName);
-						if (m == null) return null;
-						String interMethodName = m.getSecondary();
-						Class interClass = intermediary.getFromPrimaryName(interName);
-						if (interClass == null) return null;
-						m = interClass.getMethodPrimary(interMethodName);
-						if (m == null) return null;
-						return m.getSecondary();
-					};
-					MappingApplicator.fieldMapper = (name, fieldName) -> {
-						Class clazzFlame = flame.getFromSecondaryName(name);
-						if (clazzFlame == null) return null;
-						String interName = clazzFlame.getPrimaryName();
-						Field selected = null;
-						for (Field field : clazzFlame.getFields())
-							if (field.getPrimary().equals(fieldName)) {
-								selected = field;
-								break;
+					MappingsHolder intermediary = Intermediary.generate(versionMap);
+					MappingsHolder searge = Searge.generate(versionMap);
+					
+					MappingApplicator.registerMappings(new MappingsInfo(flame, "INTERMEDIARY", "FLAME"));
+					MappingApplicator.registerMappings(new MappingsInfo(intermediary, "OBFUSCATION", "INTERMEDIARY"));
+					MappingApplicator.registerMappings(new MappingsInfo(searge, "OBFUSCATION", "SEARGE"));
+					
+					{
+						MappingsSteps steps = MappingApplicator.getSteps("FLAME", "SEARGE");
+						boolean hitSwitch = false;
+						StringBuilder stepsStr = new StringBuilder();
+						{
+							MappingsInfo step = steps.next();
+							stepsStr.append(step.name).append("->").append(step.builtOn);
+						}
+						for (MappingsInfo step : steps) {
+							if (step == null) {
+								hitSwitch = true;
+								continue;
 							}
-						if (selected == null) return null;
-						String interMethodName = selected.getSecondary();
-						Class interClass = intermediary.getFromPrimaryName(interName);
-						if (interClass == null) return null;
-						for (Field field : interClass.getFields())
-							if (field.getPrimary().equals(interMethodName)) {
-								selected = field;
-								break;
+							if (hitSwitch) stepsStr.append("->").append(step.name);
+							else stepsStr.append("->").append(step.builtOn);
+						}
+						System.out.println(stepsStr.toString());
+					}
+					
+					MappingApplicator.classMapper = (name, steps) -> {
+						String lastName = name;
+						steps.reset();
+						boolean switched = false;
+						for (MappingsInfo step : steps) {
+							if (step == null) {
+								switched = true;
+								continue;
 							}
-						if (selected == null) return null;
-						return selected.getSecondary();
+							MappingsClass mappingsClass;
+							if (step.name.equals("FLAME")) {
+								if (!switched) mappingsClass = step.mappings.getFromSecondaryName(lastName);
+								else mappingsClass = step.mappings.getFromPrimaryName(lastName);
+								if (mappingsClass == null) {
+									return lastName;
+								}
+								lastName = switched ? mappingsClass.getSecondaryName() : mappingsClass.getPrimaryName();
+							} else {
+								if (switched) mappingsClass = step.mappings.getFromSecondaryName(lastName);
+								else mappingsClass = step.mappings.getFromPrimaryName(lastName);
+								if (mappingsClass == null) {
+									return lastName;
+								}
+								lastName = switched ? mappingsClass.getPrimaryName() : mappingsClass.getSecondaryName();
+							}
+						}
+						return lastName;
 					};
+					MappingApplicator.methodMapper = (name, steps) -> {
+						String lastClassName = name.substring(0, name.indexOf(";"));
+						String lastName = name.substring(name.indexOf(";") + 1);
+						String descriptor = lastName.substring(lastName.indexOf("("));
+						lastName = lastName.substring(0, lastName.indexOf("("));
+						steps.reset();
+						boolean switched = false;
+						for (MappingsInfo step : steps) {
+							if (step == null) {
+								switched = true;
+								continue;
+							}
+							MappingsClass mappingsClass;
+							if (step.name.equals("FLAME")) {
+								if (!switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
+								else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
+								if (mappingsClass == null) {
+									return lastName;
+								}
+								lastClassName = switched ? mappingsClass.getSecondaryName() : mappingsClass.getPrimaryName();
+								String mappedDesc = MappingApplicator.mapDesc(descriptor, step.mappings);
+								for (MappingsMethod method : mappingsClass.getMethods()) {
+									if ((switched ? method.getSecondary() : method.getPrimary()).equals(lastName)) {
+										if (method.getDesc().equals(mappedDesc) || method.getDesc().equals(descriptor)) {
+											lastName = switched ? method.getPrimary() : method.getSecondary();
+											descriptor = mappedDesc;
+											break;
+										}
+									}
+								}
+							} else {
+								if (switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
+								else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
+								if (mappingsClass == null) {
+									return lastName;
+								}
+								String mappedDesc = MappingApplicator.mapDesc(descriptor, step.mappings);
+								lastClassName = switched ? mappingsClass.getPrimaryName() : mappingsClass.getSecondaryName();
+								for (MappingsMethod method : mappingsClass.getMethods()) {
+									if (((switched) ? method.getSecondary() : method.getPrimary()).equals(lastName)) {
+										if (method.getDesc().equals(mappedDesc) || method.getDesc().equals(descriptor)) {
+											lastName = switched ? method.getPrimary() : method.getSecondary();
+											descriptor = mappedDesc;
+											break;
+										}
+									}
+								}
+							}
+						}
+						return lastName;
+					};
+					MappingApplicator.fieldMapper = (name, steps) -> {
+						String lastClassName = name.substring(0, name.indexOf(";"));
+						String lastName = name.substring(name.indexOf(";") + 1);
+						steps.reset();
+						boolean switched = false;
+						for (MappingsInfo step : steps) {
+							if (step == null) {
+								switched = true;
+								continue;
+							}
+							MappingsClass mappingsClass;
+							if (step.name.equals("FLAME")) {
+								if (!switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
+								else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
+								if (mappingsClass == null) {
+									return lastName;
+								}
+								lastClassName = switched ? mappingsClass.getSecondaryName() : mappingsClass.getPrimaryName();
+								for (MappingsField field : mappingsClass.getFields()) {
+									if ((switched ? field.getSecondary() : field.getPrimary()).equals(lastName)) {
+										lastName = switched ? field.getPrimary() : field.getSecondary();
+										break;
+									}
+								}
+							} else {
+								if (switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
+								else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
+								if (mappingsClass == null) {
+									return lastName;
+								}
+								lastClassName = switched ? mappingsClass.getPrimaryName() : mappingsClass.getSecondaryName();
+								for (MappingsField field : mappingsClass.getFields()) {
+									if ((switched ? field.getSecondary() : field.getPrimary()).equals(lastName)) {
+										lastName = switched ? field.getPrimary() : field.getSecondary();
+										break;
+									}
+								}
+							}
+						}
+						return lastName;
+					};
+//					MappingApplicator.methodMapper = (name, methodName) -> {
+//						MappingsClass clazzFlame = flame.getFromSecondaryName(name);
+//						if (clazzFlame == null) return null;
+//						String interName = clazzFlame.getPrimaryName();
+//						if (methodName.contains("(")) {
+//							String descriptor = methodName.substring(methodName.indexOf("("));
+//							methodName = methodName.substring(0, methodName.indexOf("("));
+//							String inter = "";
+//							{
+//								String mappedDesc;
+//								{
+//									Descriptor descriptor1 = ASMApplicator.parseDescriptor(descriptor);
+//									for (int index = 0; index < descriptor1.typeNames.length; index++) {
+//										String typeName = descriptor1.typeNames[index];
+//										MappingsClass aclazz = flame.getFromSecondaryName(typeName);
+//										if (aclazz != null) {
+//											String className = aclazz.getPrimaryName();
+//											if (className != null) descriptor1.returnType = className;
+//										}
+//									}
+//									String typeName = descriptor1.returnType;
+//									MappingsClass aclazz = flame.getFromSecondaryName(typeName);
+//									if (aclazz != null) {
+//										String className = aclazz.getPrimaryName();
+//										if (className != null) descriptor1.returnType = className;
+//									}
+//									mappedDesc = descriptor1.toString();
+//								}
+//								for (MappingsMethod method : clazzFlame.getMethods()) {
+//									if (method.getPrimary().equals(methodName)) {
+//										if (method.getDesc().equals(descriptor) || method.getDesc().equals(mappedDesc)) {
+//											inter = method.getSecondary();
+//											break;
+//										}
+//									}
+//								}
+//							}
+//							if (stopAtInter) return inter;
+//							{
+//								String mappedDesc;
+//								{
+//									Descriptor descriptor1 = ASMApplicator.parseDescriptor(descriptor);
+//									for (int index = 0; index < descriptor1.typeNames.length; index++) {
+//										String typeName = descriptor1.typeNames[index];
+//										MappingsClass aclazz = intermediary.getFromSecondaryName(typeName);
+//										if (aclazz != null) {
+//											String className = aclazz.getPrimaryName();
+//											if (className != null) descriptor1.returnType = className;
+//										}
+//									}
+//									String typeName = descriptor1.returnType;
+//									MappingsClass aclazz = intermediary.getFromSecondaryName(typeName);
+//									if (aclazz != null) {
+//										String className = aclazz.getPrimaryName();
+//										if (className != null) descriptor1.returnType = className;
+//									}
+//									mappedDesc = descriptor1.toString();
+//								}
+//								MappingsClass interClass = intermediary.getFromPrimaryName(interName);
+//								if (interClass == null) return null;
+//								for (MappingsMethod method : interClass.getMethods()) {
+//									if (method.getPrimary().equals(inter)) {
+//										if (method.getDesc().equals(descriptor) || method.getDesc().equals(mappedDesc)) {
+//											inter = method.getSecondary();
+//											break;
+//										}
+//									}
+//								}
+//							}
+//							return inter;
+//						}
+//						//TODO: make this work for when there are multiple methods with the same name
+//						MappingsMethod m = clazzFlame.getMethodPrimary(methodName);
+//						if (m == null) return null;
+//						String interMethodName = m.getSecondary();
+//						if (stopAtInter) return interMethodName;
+//						MappingsClass interClass = intermediary.getFromPrimaryName(interName);
+//						if (interClass == null) return null;
+//						m = interClass.getMethodPrimary(interMethodName);
+//						if (m == null) return null;
+//						return m.getSecondary();
+//					};
+//					System.out.println(MappingApplicator.methodMapper.apply("net/minecraft/resource/ResourceName", "path()Ljava/lang/String;"));
+//					MappingApplicator.fieldMapper = (name, fieldName) -> {
+//						MappingsClass clazzFlame = flame.getFromSecondaryName(name);
+//						if (clazzFlame == null) return null;
+//						String interName = clazzFlame.getPrimaryName();
+//						MappingsField selected = null;
+//						for (MappingsField field : clazzFlame.getFields())
+//							if (field.getPrimary().equals(fieldName)) {
+//								selected = field;
+//								break;
+//							}
+//						if (selected == null) return null;
+//						String interMethodName = selected.getSecondary();
+//						if (stopAtInter) return interMethodName;
+//						MappingsClass interClass = intermediary.getFromPrimaryName(interName);
+//						if (interClass == null) return null;
+//						for (MappingsField field : interClass.getFields())
+//							if (field.getPrimary().equals(interMethodName)) {
+//								selected = field;
+//								break;
+//							}
+//						if (selected == null) return null;
+//						return selected.getSecondary();
+//					};
 					ASMApplicator.jarGetter = (className)->{
 						String jarEntry = className.replace(".","/") + ".class";
 						File jar = FlameLauncher.getJarForEntry(jarEntry);
