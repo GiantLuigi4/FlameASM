@@ -289,26 +289,34 @@ public class MappingApplicator {
 		Descriptor descr = parseDescriptor(desc);
 		for (int index = 0; index < descr.typeNames.length; index++) {
 			String typeName = descr.typeNames[index];
-			if (typeName.startsWith("L") && typeName.endsWith(";")) typeName = typeName.substring(1, typeName.length() - 1);
+			boolean isNonPrimitive = false;
+			if (typeName.startsWith("L") && typeName.endsWith(";")) {
+				typeName = typeName.substring(1, typeName.length() - 1);
+				isNonPrimitive = true;
+			}
 			MappingsClass clazz = holder.getFromPrimaryName(typeName);
 			if (clazz != null) typeName = "L" + clazz.getSecondaryName() + ";";
 			else {
 				clazz = holder.getFromSecondaryName(typeName);
 				if (clazz != null) typeName = "L" + clazz.getPrimaryName() + ";";
-				else {
+				else if (isNonPrimitive){
 					typeName = "L" + typeName + ";";
 				}
 			}
 			descr.typeNames[index] = typeName;
 		}
 		String typeName = descr.returnType;
-		if (typeName.startsWith("L") && typeName.endsWith(";")) typeName = typeName.substring(1, typeName.length() - 1);
+		boolean isNonPrimitive = false;
+		if (typeName.startsWith("L") && typeName.endsWith(";")){
+			typeName = typeName.substring(1, typeName.length() - 1);
+			isNonPrimitive = true;
+		}
 		MappingsClass clazz = holder.getFromPrimaryName(typeName);
 		if (clazz != null) typeName = "L" + clazz.getSecondaryName() + ";";
 		else {
 			clazz = holder.getFromSecondaryName(typeName);
 			if (clazz != null) typeName = "L" + clazz.getPrimaryName() + ";";
-			else {
+			else if (isNonPrimitive) {
 				typeName = "L" + typeName + ";";
 			}
 		}
