@@ -1,13 +1,28 @@
 package testing;
 
+import net.minecraft.registry.BlockRegistry;
 import net.minecraft.registry.BuiltinRegistries;
-import net.minecraft.resource.ResourceName;
-import net.minecraft.vecmath.Matrix4;
-import net.minecraft.vecmath.Vector3d;
+import net.minecraft.util.resource.ResourceName;
+import net.minecraft.util.vecmath.Matrix4;
+import net.minecraft.util.vecmath.Vector3d;
+import net.minecraft.world.blocks.BlockProperties;
+import tfc.flamemc.API.Registry;
 
 //TODO: remove this
 public class DummyClass {
 	public static void main(String[] args) {
+		System.out.println(TestExtend.class);
+		
+		for (TestEnum value : TestEnum.values()) {
+			System.out.println(value);
+		}
+		
+		try {
+			BlockRegistry.register("test:test", BlockRegistry.STONE_BLOCK);
+		} catch (Throwable err) {
+			err.printStackTrace();
+		}
+		
 		System.out.println((new Vector3d(1.0D, 2.0D, 3.0D)).dotProduct(new Vector3d(0.0D, 0.0D, 0.0D)));
 		System.out.println(Matrix4.perspectiveMatrix(90, 1, 0.01f, 1000));
 		
@@ -22,6 +37,14 @@ public class DummyClass {
 		System.out.println(name.path());
 		
 		System.out.println(BuiltinRegistries.BLOCKS);
+		System.out.println(BlockRegistry.AIR);
+		System.out.println(BlockRegistry.STONE_BLOCK);
+		
+		Registry.register(
+				Registry.Register.BLOCKS,
+				new ResourceName("flameasm:test_extend"),
+				new TestExtend(BlockProperties.from(BlockRegistry.STONE_BLOCK))
+		);
 		
 		System.out.println((long)0);
 		int val = 0;

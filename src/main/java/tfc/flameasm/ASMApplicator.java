@@ -3,8 +3,6 @@ package tfc.flameasm;
 import tfc.flameasm.hookins.HookinApplicator;
 import tfc.flameasm.hookins.HookinReader;
 import tfc.flameasm.remapper.MappingApplicator;
-import tfc.mappings.structure.MappingsClass;
-import tfc.mappings.structure.MappingsHolder;
 
 import java.io.File;
 import java.io.FileOutputStream;

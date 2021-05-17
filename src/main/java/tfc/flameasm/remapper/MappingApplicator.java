@@ -96,9 +96,19 @@ public class MappingApplicator {
 		ClassReader reader = new ClassReader(bytes);
 		ClassNode node = new ClassNode();
 		reader.accept(node, 0);
+		if (node.visibleAnnotations != null) {
+			for (AnnotationNode visibleAnnotation : node.visibleAnnotations) {
+				System.out.println("L" + NoRemap.class.getName().replace(".","/") + ";");
+				System.out.println(visibleAnnotation.desc);
+				if (visibleAnnotation.desc.equals("L"+NoRemap.class.getName().replace(".","/") +";")) {
+					return bytes;
+				}
+			}
+		}
 		StringBuilder classDescriptor = new StringBuilder();
 		boolean wasRemapped = false;
 		MappingsSteps steps = getSteps("FLAME", targetMappings);
+		String extendedClass = "java/lang/Object";
 		{
 			ArrayList<String> interfaces = new ArrayList<>();
 			for (String typeName : node.interfaces) {
@@ -112,6 +122,7 @@ public class MappingApplicator {
 		}
 		{
 			String typeName = node.superName;
+			extendedClass = typeName;
 			typeName = classMapper.apply(typeName, steps);
 			if (typeName != null) {
 				node.superName = typeName;
@@ -120,6 +131,7 @@ public class MappingApplicator {
 		}
 		classDescriptor.append("Class: ").append(name).append("\n");
 		for (MethodNode method : node.methods) {
+			method.name = methodMapper.apply(extendedClass + ";" + method.name + method.desc, steps);
 			classDescriptor.append(" ").append(method.name).append(":").append("\n");
 			{
 				Descriptor desc = parseDescriptor(method.desc);
