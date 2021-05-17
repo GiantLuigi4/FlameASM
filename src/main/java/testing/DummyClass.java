@@ -25,17 +25,17 @@ public class DummyClass {
 		
 		System.out.println((new Vector3d(1.0D, 2.0D, 3.0D)).dotProduct(new Vector3d(0.0D, 0.0D, 0.0D)));
 		System.out.println(Matrix4.perspectiveMatrix(90, 1, 0.01f, 1000));
-		
+
 		System.out.println(name);
 		String test = "2";
 		Object o = new Object();
 		System.out.println(o.toString());
 		System.out.println(test + "1");
-		
+
 		ResourceName name = new ResourceName("test:test");
 		System.out.println(name.namespace());
 		System.out.println(name.path());
-		
+
 		System.out.println(BuiltinRegistries.BLOCKS);
 		System.out.println(BlockRegistry.AIR);
 		System.out.println(BlockRegistry.STONE_BLOCK);
@@ -58,25 +58,25 @@ public class DummyClass {
 		test();
 		printName(name);
 	}
-	
+
 	public static void print5Things() {
 		// oh no, someone forgot to fill out this method
 		// better make a hookin to fill it out
 	}
-	
+
 	public static void printName(ResourceName name) {
 		// it is very deliberate that I'm not just using toString
 		// I know toString gives the exact same result
 		// I just wanna maximize references for testing purposes
 		System.out.println(name.namespace() + ":" + name.path());
 	}
-	
+
 	public static void test() {
 		ResourceName name = new ResourceName("hello:yes");
 		System.out.println(name);
 		Class<?> clazz = ResourceName.class;
 	}
-	
+
 	// TODO: use access modifiers to make this field public static instead of private static final
 	private static final ResourceName name = new ResourceName("test:test");
 }

@@ -62,11 +62,11 @@ public class Main implements IFlameMod, IFlameAPIMod {
 					}
 					MappingsHolder intermediary = Intermediary.generate(versionMap);
 					MappingsHolder searge = Searge.generate(versionMap);
-					
+
 					MappingApplicator.registerMappings(new MappingsInfo(flame, "INTERMEDIARY", "FLAME"));
 					MappingApplicator.registerMappings(new MappingsInfo(intermediary, "OBFUSCATION", "INTERMEDIARY"));
 					MappingApplicator.registerMappings(new MappingsInfo(searge, "OBFUSCATION", "SEARGE"));
-					
+
 					{
 						MappingsSteps steps = MappingApplicator.getSteps("FLAME", "SEARGE");
 						boolean hitSwitch = false;
@@ -85,7 +85,7 @@ public class Main implements IFlameMod, IFlameAPIMod {
 						}
 						System.out.println(stepsStr.toString());
 					}
-					
+
 					MappingApplicator.classMapper = (name, steps) -> {
 						String lastName = name;
 						steps.reset();
@@ -352,7 +352,7 @@ public class Main implements IFlameMod, IFlameAPIMod {
 			((FlameURLLoader) loader).getAsmAppliers().put("flameasm:asm", ASMApplicator::apply);
 		}
 	}
-	
+
 	private static String readUrl(String urlString) throws IOException {
 		BufferedReader reader = null;
 		try {
@@ -363,22 +363,22 @@ public class Main implements IFlameMod, IFlameAPIMod {
 			char[] chars = new char[1024];
 			while ((read = reader.read(chars)) != -1)
 				builder.append(chars, 0, read);
-			
+
 			return builder.toString();
-			
+
 		} finally {
 			if (reader != null)
 				reader.close();
 		}
 	}
-	
+
 	@Override
 	public void preinit(String[] strings) {
 	}
-	
+
 	@Override
 	public void init(String[] strings) {}
-	
+
 	@Override
 	public void postinit(String[] strings) {
 		DummyClass.main(strings);
