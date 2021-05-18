@@ -17,7 +17,7 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 ext {
-    flameMCVersion = '0840e53c1e'
+    flameMCVersion = 'ae8557a1e7'
     bytecodeUtilsVersion = '455c3d13b7'
     MCMappingsHelperVersion = '92190f30a4'
 }
@@ -97,7 +97,7 @@ dependencies {
 
 //jars the mod directly into flame_mods folder
 jar {
-    File dest = new File(System.getProperty("user.dir") + "\\run\\flame_mods\\")
+    File dest = new File(System.getProperty("user.dir") + File.separator + "run" + File.separator + "flame_mods" + File.separator)
     if (!dest.exists()) {
         dest.getParentFile().mkdirs()
         dest.mkdirs()

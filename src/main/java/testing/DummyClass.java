@@ -5,7 +5,6 @@ import net.minecraft.registry.BuiltinRegistries;
 import net.minecraft.util.resource.ResourceName;
 import net.minecraft.util.vecmath.Matrix4;
 import net.minecraft.util.vecmath.Vector3d;
-import net.minecraft.world.blocks.BlockProperties;
 //import tfc.flamemc.API.Registry;
 
 //TODO: remove this
@@ -29,7 +28,7 @@ public class DummyClass {
 		System.out.println(name);
 		String test = "2";
 		Object o = new Object();
-		System.out.println(o.toString());
+		System.out.println(o);
 		System.out.println(test + "1");
 
 		ResourceName name = new ResourceName("test:test");

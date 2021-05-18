@@ -1,10 +1,5 @@
 package entries.FlameASM;
 
-import tfc.flameasm.remapper.MappingsInfo;
-import tfc.flameasm.remapper.MappingsSteps;
-import tfc.flameasm.remapper.NoRemap;
-import tfc.mappings.structure.*;
-import tfc.mappings.types.Intermediary;
 import testing.DummyClass;
 import tfc.flame.FlameURLLoader;
 import tfc.flame.IFlameAPIMod;
@@ -15,8 +10,12 @@ import tfc.flameasm.Descriptor;
 import tfc.flameasm.hookins.HookinApplicator;
 import tfc.flameasm.hookins.HookinReader;
 import tfc.flameasm.remapper.MappingApplicator;
+import tfc.flameasm.remapper.MappingsInfo;
+import tfc.flameasm.remapper.MappingsSteps;
+import tfc.flameasm.remapper.NoRemap;
 import tfc.flamemc.FlameLauncher;
-import tfc.mappings.structure.FlameMapHolder;
+import tfc.mappings.structure.*;
+import tfc.mappings.types.Intermediary;
 import tfc.mappings.types.Searge;
 
 import java.io.*;
@@ -33,193 +32,192 @@ public class Main implements IFlameMod, IFlameAPIMod {
 			clazz = HookinApplicator.class;
 			clazz = CSVReader.class;
 			clazz = NoRemap.class;
-		} catch (Throwable err) {
+		} catch (Throwable ignored) {
 		}
 		ClassLoader loader = Main.class.getClassLoader();
 		if (loader instanceof FlameURLLoader) {
 			try {
 				java.lang.Class<?> clazz = java.lang.Class.forName("tfc.mappings.structure.FlameMapHolder");
-				if (clazz != null) {
-					FlameMapHolder flame = new FlameMapHolder(readUrl("https://raw.githubusercontent.com/GiantLuigi4/FlameMappings/master/mappings/flame_mappings.mappings"));
-					boolean isVersion = false;
-					String versionMap = "";
-					for (String s : args) {
-						if (s.equals("--version")) {
-							isVersion = true;
-						} else if (isVersion) {
-							String version = s;
-							if (version.startsWith("fabric-loader")) {
-								version = version.substring("fabric-loader-".length());
-								version = version.substring(version.indexOf("-") + 1);
-							}
-							String ver = "";
-							for (char c : version.toCharArray()) {
-								if (c == '.' || Character.isDigit(c)) ver += c;
-								else break;
-							}
-							version = ver;
-							versionMap = version.replace("-flame", "");
-							isVersion = false;
+				FlameMapHolder flame = new FlameMapHolder(readUrl("https://raw.githubusercontent.com/GiantLuigi4/FlameMappings/master/mappings/flame_mappings.mappings"));
+				boolean isVersion = false;
+				String versionMap = "";
+				for (String s : args) {
+					if (s.equals("--version")) {
+						isVersion = true;
+					} else if (isVersion) {
+						String version = s;
+						if (version.startsWith("fabric-loader")) {
+							version = version.substring("fabric-loader-".length());
+							version = version.substring(version.indexOf("-") + 1);
 						}
+						String ver = "";
+						for (char c : version.toCharArray()) {
+							if (c == '.' || Character.isDigit(c)) ver += c;
+							else break;
+						}
+						version = ver;
+						versionMap = version.replace("-flame", "");
+						isVersion = false;
 					}
-					MappingsHolder intermediary = Intermediary.generate(versionMap);
-					MappingsHolder searge = Searge.generate(versionMap);
+				}
+				MappingsHolder intermediary = Intermediary.generate(versionMap);
+				MappingsHolder searge = Searge.generate(versionMap);
 
-					MappingApplicator.registerMappings(new MappingsInfo(flame, "INTERMEDIARY", "FLAME"));
-					MappingApplicator.registerMappings(new MappingsInfo(intermediary, "OBFUSCATION", "INTERMEDIARY"));
-					MappingApplicator.registerMappings(new MappingsInfo(searge, "OBFUSCATION", "SEARGE"));
+				MappingApplicator.registerMappings(new MappingsInfo(flame, "INTERMEDIARY", "FLAME"));
+				MappingApplicator.registerMappings(new MappingsInfo(intermediary, "OBFUSCATION", "INTERMEDIARY"));
+				MappingApplicator.registerMappings(new MappingsInfo(searge, "OBFUSCATION", "SEARGE"));
 
+				{
+					MappingsSteps steps = MappingApplicator.getSteps("FLAME", "SEARGE");
+					boolean hitSwitch = false;
+					StringBuilder stepsStr = new StringBuilder();
 					{
-						MappingsSteps steps = MappingApplicator.getSteps("FLAME", "SEARGE");
-						boolean hitSwitch = false;
-						StringBuilder stepsStr = new StringBuilder();
-						{
-							MappingsInfo step = steps.next();
-							stepsStr.append(step.name).append("->").append(step.builtOn);
-						}
-						for (MappingsInfo step : steps) {
-							if (step == null) {
-								hitSwitch = true;
-								continue;
-							}
-							if (hitSwitch) stepsStr.append("->").append(step.name);
-							else stepsStr.append("->").append(step.builtOn);
-						}
-						System.out.println(stepsStr.toString());
+						MappingsInfo step = steps.next();
+						stepsStr.append(step.name).append("->").append(step.builtOn);
 					}
+					for (MappingsInfo step : steps) {
+						if (step == null) {
+							hitSwitch = true;
+							continue;
+						}
+						if (hitSwitch) stepsStr.append("->").append(step.name);
+						else stepsStr.append("->").append(step.builtOn);
+					}
+					System.out.println(stepsStr);
+				}
 
-					MappingApplicator.classMapper = (name, steps) -> {
-						String lastName = name;
-						steps.reset();
-						boolean switched = false;
-						for (MappingsInfo step : steps) {
-							if (step == null) {
-								switched = true;
-								continue;
-							}
-							MappingsClass mappingsClass;
-							if (step.name.equals("FLAME")) {
-								if (!switched) mappingsClass = step.mappings.getFromSecondaryName(lastName);
-								else mappingsClass = step.mappings.getFromPrimaryName(lastName);
-								if (mappingsClass == null) {
-									return lastName;
-								}
-								lastName = switched ? mappingsClass.getSecondaryName() : mappingsClass.getPrimaryName();
-							} else {
-								if (switched) mappingsClass = step.mappings.getFromSecondaryName(lastName);
-								else mappingsClass = step.mappings.getFromPrimaryName(lastName);
-								if (mappingsClass == null) {
-									return lastName;
-								}
-								lastName = switched ? mappingsClass.getPrimaryName() : mappingsClass.getSecondaryName();
-							}
+				MappingApplicator.classMapper = (name, steps) -> {
+					String lastName = name;
+					steps.reset();
+					boolean switched = false;
+					for (MappingsInfo step : steps) {
+						if (step == null) {
+							switched = true;
+							continue;
 						}
-						return lastName;
-					};
-					MappingApplicator.methodMapper = (name, steps) -> {
-						String lastClassName = name.substring(0, name.indexOf(";"));
-						String lastName = name.substring(name.indexOf(";") + 1);
-						String descriptor = lastName.substring(lastName.indexOf("("));
-						lastName = lastName.substring(0, lastName.indexOf("("));
-						steps.reset();
-						boolean switched = false;
-						for (MappingsInfo step : steps) {
-							if (step == null) {
-								switched = true;
-								continue;
+						MappingsClass mappingsClass;
+						if (step.name.equals("FLAME")) {
+							if (!switched) mappingsClass = step.mappings.getFromSecondaryName(lastName);
+							else mappingsClass = step.mappings.getFromPrimaryName(lastName);
+							if (mappingsClass == null) {
+								return lastName;
 							}
-							MappingsClass mappingsClass;
-							if (step.name.equals("FLAME")) {
-								if (!switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
-								else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
-								if (mappingsClass == null) {
-									return lastName;
-								}
-								String mappedDesc = MappingApplicator.mapDesc(descriptor, step.mappings);
-								for (MappingsMethod method : mappingsClass.getMethods()) {
-									if ((switched ? method.getSecondary() : method.getPrimary()).equals(lastName)) {
-										if (method.getDesc().equals(mappedDesc) || method.getDesc().equals(descriptor)) {
-											{
-												lastClassName = method.getOwner();
-												if (!switched)
-													mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
-												else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
-												if (mappingsClass == null) {
-													return lastName;
-												}
-											}
-											lastName = switched ? method.getPrimary() : method.getSecondary();
-											descriptor = mappedDesc;
-											break;
-										}
-									}
-								}
-								lastClassName = switched ? mappingsClass.getSecondaryName() : mappingsClass.getPrimaryName();
-							} else {
-								if (switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
-								else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
-								if (mappingsClass == null) {
-									return lastName;
-								}
-								lastClassName = switched ? mappingsClass.getPrimaryName() : mappingsClass.getSecondaryName();
-								String mappedDesc = MappingApplicator.mapDesc(descriptor, step.mappings);
-								for (MappingsMethod method : mappingsClass.getMethods()) {
-									if (((switched) ? method.getSecondary() : method.getPrimary()).equals(lastName)) {
-										if (method.getDesc().equals(mappedDesc) || method.getDesc().equals(descriptor)) {
-											{
-												lastClassName = method.getOwner();
-											}
-											lastName = switched ? method.getPrimary() : method.getSecondary();
-											descriptor = mappedDesc;
-											break;
-										}
-									}
-								}
+							lastName = switched ? mappingsClass.getSecondaryName() : mappingsClass.getPrimaryName();
+						} else {
+							if (switched) mappingsClass = step.mappings.getFromSecondaryName(lastName);
+							else mappingsClass = step.mappings.getFromPrimaryName(lastName);
+							if (mappingsClass == null) {
+								return lastName;
 							}
+							lastName = switched ? mappingsClass.getPrimaryName() : mappingsClass.getSecondaryName();
 						}
-						return lastName;
-					};
-					MappingApplicator.fieldMapper = (name, steps) -> {
-						String lastClassName = name.substring(0, name.indexOf(";"));
-						String lastName = name.substring(name.indexOf(";") + 1);
-						steps.reset();
-						boolean switched = false;
-						for (MappingsInfo step : steps) {
-							if (step == null) {
-								switched = true;
-								continue;
+					}
+					return lastName;
+				};
+				MappingApplicator.methodMapper = (name, steps) -> {
+					String lastClassName = name.substring(0, name.indexOf(";"));
+					String lastName = name.substring(name.indexOf(";") + 1);
+					String descriptor = lastName.substring(lastName.indexOf("("));
+					lastName = lastName.substring(0, lastName.indexOf("("));
+					steps.reset();
+					boolean switched = false;
+					for (MappingsInfo step : steps) {
+						if (step == null) {
+							switched = true;
+							continue;
+						}
+						MappingsClass mappingsClass;
+						if (step.name.equals("FLAME")) {
+							if (!switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
+							else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
+							if (mappingsClass == null) {
+								return lastName;
 							}
-							MappingsClass mappingsClass;
-							if (step.name.equals("FLAME")) {
-								if (!switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
-								else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
-								if (mappingsClass == null) {
-									return lastName;
-								}
-								lastClassName = switched ? mappingsClass.getSecondaryName() : mappingsClass.getPrimaryName();
-								for (MappingsField field : mappingsClass.getFields()) {
-									if ((switched ? field.getSecondary() : field.getPrimary()).equals(lastName)) {
-										lastName = switched ? field.getPrimary() : field.getSecondary();
+							String mappedDesc = MappingApplicator.mapDesc(descriptor, step.mappings);
+							for (MappingsMethod method : mappingsClass.getMethods()) {
+								if ((switched ? method.getSecondary() : method.getPrimary()).equals(lastName)) {
+									if (method.getDesc().equals(mappedDesc) || method.getDesc().equals(descriptor)) {
+										{
+											lastClassName = method.getOwner();
+											if (!switched)
+												mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
+											else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
+											if (mappingsClass == null) {
+												return lastName;
+											}
+										}
+										lastName = switched ? method.getPrimary() : method.getSecondary();
+										descriptor = mappedDesc;
 										break;
 									}
 								}
-							} else {
-								if (switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
-								else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
-								if (mappingsClass == null) {
-									return lastName;
-								}
-								lastClassName = switched ? mappingsClass.getPrimaryName() : mappingsClass.getSecondaryName();
-								for (MappingsField field : mappingsClass.getFields()) {
-									if ((switched ? field.getSecondary() : field.getPrimary()).equals(lastName)) {
-										lastName = switched ? field.getPrimary() : field.getSecondary();
+							}
+							lastClassName = switched ? mappingsClass.getSecondaryName() : mappingsClass.getPrimaryName();
+						} else {
+							if (switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
+							else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
+							if (mappingsClass == null) {
+								return lastName;
+							}
+							lastClassName = switched ? mappingsClass.getPrimaryName() : mappingsClass.getSecondaryName();
+							String mappedDesc = MappingApplicator.mapDesc(descriptor, step.mappings);
+							for (MappingsMethod method : mappingsClass.getMethods()) {
+								if (((switched) ? method.getSecondary() : method.getPrimary()).equals(lastName)) {
+									if (method.getDesc().equals(mappedDesc) || method.getDesc().equals(descriptor)) {
+										{
+											lastClassName = method.getOwner();
+										}
+										lastName = switched ? method.getPrimary() : method.getSecondary();
+										descriptor = mappedDesc;
 										break;
 									}
 								}
 							}
 						}
-						return lastName;
-					};
+					}
+					return lastName;
+				};
+				MappingApplicator.fieldMapper = (name, steps) -> {
+					String lastClassName = name.substring(0, name.indexOf(";"));
+					String lastName = name.substring(name.indexOf(";") + 1);
+					steps.reset();
+					boolean switched = false;
+					for (MappingsInfo step : steps) {
+						if (step == null) {
+							switched = true;
+							continue;
+						}
+						MappingsClass mappingsClass;
+						if (step.name.equals("FLAME")) {
+							if (!switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
+							else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
+							if (mappingsClass == null) {
+								return lastName;
+							}
+							lastClassName = switched ? mappingsClass.getSecondaryName() : mappingsClass.getPrimaryName();
+							for (MappingsField field : mappingsClass.getFields()) {
+								if ((switched ? field.getSecondary() : field.getPrimary()).equals(lastName)) {
+									lastName = switched ? field.getPrimary() : field.getSecondary();
+									break;
+								}
+							}
+						} else {
+							if (switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
+							else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
+							if (mappingsClass == null) {
+								return lastName;
+							}
+							lastClassName = switched ? mappingsClass.getPrimaryName() : mappingsClass.getSecondaryName();
+							for (MappingsField field : mappingsClass.getFields()) {
+								if ((switched ? field.getSecondary() : field.getPrimary()).equals(lastName)) {
+									lastName = switched ? field.getPrimary() : field.getSecondary();
+									break;
+								}
+							}
+						}
+					}
+					return lastName;
+				};
 //					MappingApplicator.methodMapper = (name, methodName) -> {
 //						MappingsClass clazzFlame = flame.getFromSecondaryName(name);
 //						if (clazzFlame == null) return null;
@@ -326,43 +324,40 @@ public class Main implements IFlameMod, IFlameAPIMod {
 //						if (selected == null) return null;
 //						return selected.getSecondary();
 //					};
-					ASMApplicator.jarGetter = (className)->{
-						String jarEntry = className.replace(".","/") + ".class";
-						File jar = FlameLauncher.getJarForEntry(jarEntry);
-						if (jar == null) return null;
-						return jar;
-					};
-					Enumeration<URL> urls = Main.class.getClassLoader().getResources("hookins.csv");
-					((FlameURLLoader) loader).getAsmAppliers().put("flameasm:asm", ASMApplicator::apply);
-					while (urls.hasMoreElements()) {
-						URL url = urls.nextElement();
-						InputStream stream = url.openStream();
-						ByteArrayOutputStream stream1 = new ByteArrayOutputStream();
-						try {
-							int b;
-							while ((b = stream.read()) != -1) stream1.write(b);
-							String firstEntry = null;
-							for (String entry : new CSVReader(new String(stream1.toByteArray())).entries) {
-								if (firstEntry == null) firstEntry = entry;
-								else java.lang.Class.forName(firstEntry + "." + entry);
-							}
-						} catch (Throwable ignored) {
-						} finally {
-							stream.close();
-							stream1.close();
-							stream1.flush();
+				ASMApplicator.jarGetter = (className)->{
+					String jarEntry = className.replace(".","/") + ".class";
+					return FlameLauncher.getJarForEntry(jarEntry);
+				};
+				Enumeration<URL> urls = Main.class.getClassLoader().getResources("hookins.csv");
+				((FlameURLLoader) loader).getAsmAppliers().put("flameasm:asm", ASMApplicator::apply);
+				while (urls.hasMoreElements()) {
+					URL url = urls.nextElement();
+					InputStream stream = url.openStream();
+					ByteArrayOutputStream stream1 = new ByteArrayOutputStream();
+					try {
+						int b;
+						while ((b = stream.read()) != -1) stream1.write(b);
+						String firstEntry = null;
+						for (String entry : new CSVReader(stream1.toString()).entries) {
+							if (firstEntry == null) firstEntry = entry;
+							else Class.forName(firstEntry + "." + entry);
 						}
+					} catch (Throwable ignored) {
+					} finally {
+						stream.close();
+						stream1.close();
+						stream1.flush();
 					}
+				}
 //					HashMap<File, HashMap<String, byte[]>> files = (HashMap<File, HashMap<String, byte[]>>) f.get(null);
 //					for (File file : files.keySet()) {
 //						byte[] bytes = FlameLauncher.getSourceFile(file, "hookins.csv");
 //						if (bytes == null) continue;
 //
 //					}
-					return;
-				}
-			} catch (Throwable ignored) {
-				ignored.printStackTrace();
+				return;
+			} catch (Throwable ex) {
+				ex.printStackTrace();
 			}
 			((FlameURLLoader) loader).getAsmAppliers().put("flameasm:asm", ASMApplicator::apply);
 		}

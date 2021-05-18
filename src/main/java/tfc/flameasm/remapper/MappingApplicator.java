@@ -16,7 +16,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static tfc.flameasm.ASMApplicator.parseDescriptor;
 import static tfc.flameasm.ASMApplicator.writeBytes;
