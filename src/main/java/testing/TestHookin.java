@@ -3,7 +3,6 @@ package testing;
 import tfc.flameasm.annotations.hookin.Hookin;
 import tfc.flameasm.annotations.hookin.Insert;
 
-import java.util.Arrays;
 import java.util.Random;
 
 @Hookin(target = "testing.DummyClass")
