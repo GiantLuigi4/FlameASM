@@ -292,7 +292,7 @@ public class MappingApplicator {
 		}
 		if (!wasRemapped) return bytes;
 		writeBytes(new File("flameasm/remap/" + (name.replace(".", "/") + ".properties")), classDescriptor.toString().getBytes());
-		ClassWriter result = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+		ClassWriter result = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
 		node.accept(result);
 		return result.toByteArray();
 	}

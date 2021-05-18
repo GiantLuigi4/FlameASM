@@ -2,6 +2,7 @@ package entries.FlameASM;
 
 import tfc.flameasm.remapper.MappingsInfo;
 import tfc.flameasm.remapper.MappingsSteps;
+import tfc.flameasm.remapper.NoRemap;
 import tfc.mappings.structure.*;
 import tfc.mappings.types.Intermediary;
 import testing.DummyClass;
@@ -31,6 +32,7 @@ public class Main implements IFlameMod, IFlameAPIMod {
 			clazz = HookinReader.class;
 			clazz = HookinApplicator.class;
 			clazz = CSVReader.class;
+			clazz = NoRemap.class;
 		} catch (Throwable err) {
 		}
 		ClassLoader loader = Main.class.getClassLoader();
@@ -38,7 +40,7 @@ public class Main implements IFlameMod, IFlameAPIMod {
 			try {
 				java.lang.Class<?> clazz = java.lang.Class.forName("tfc.mappings.structure.FlameMapHolder");
 				if (clazz != null) {
-					FlameMapHolder flame = new FlameMapHolder(readUrl("https://raw.githubusercontent.com/GiantLuigi4/FlameAPI-MC-Rewrite/master/mappings/flame_mappings.mappings"));
+					FlameMapHolder flame = new FlameMapHolder(readUrl("https://raw.githubusercontent.com/GiantLuigi4/FlameMappings/master/mappings/flame_mappings.mappings"));
 					boolean isVersion = false;
 					String versionMap = "";
 					for (String s : args) {
@@ -133,28 +135,40 @@ public class Main implements IFlameMod, IFlameAPIMod {
 								if (mappingsClass == null) {
 									return lastName;
 								}
-								lastClassName = switched ? mappingsClass.getSecondaryName() : mappingsClass.getPrimaryName();
 								String mappedDesc = MappingApplicator.mapDesc(descriptor, step.mappings);
 								for (MappingsMethod method : mappingsClass.getMethods()) {
 									if ((switched ? method.getSecondary() : method.getPrimary()).equals(lastName)) {
 										if (method.getDesc().equals(mappedDesc) || method.getDesc().equals(descriptor)) {
+											{
+												lastClassName = method.getOwner();
+												if (!switched)
+													mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
+												else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
+												if (mappingsClass == null) {
+													return lastName;
+												}
+											}
 											lastName = switched ? method.getPrimary() : method.getSecondary();
 											descriptor = mappedDesc;
 											break;
 										}
 									}
 								}
+								lastClassName = switched ? mappingsClass.getSecondaryName() : mappingsClass.getPrimaryName();
 							} else {
 								if (switched) mappingsClass = step.mappings.getFromSecondaryName(lastClassName);
 								else mappingsClass = step.mappings.getFromPrimaryName(lastClassName);
 								if (mappingsClass == null) {
 									return lastName;
 								}
-								String mappedDesc = MappingApplicator.mapDesc(descriptor, step.mappings);
 								lastClassName = switched ? mappingsClass.getPrimaryName() : mappingsClass.getSecondaryName();
+								String mappedDesc = MappingApplicator.mapDesc(descriptor, step.mappings);
 								for (MappingsMethod method : mappingsClass.getMethods()) {
 									if (((switched) ? method.getSecondary() : method.getPrimary()).equals(lastName)) {
 										if (method.getDesc().equals(mappedDesc) || method.getDesc().equals(descriptor)) {
+											{
+												lastClassName = method.getOwner();
+											}
 											lastName = switched ? method.getPrimary() : method.getSecondary();
 											descriptor = mappedDesc;
 											break;
@@ -348,6 +362,7 @@ public class Main implements IFlameMod, IFlameAPIMod {
 					return;
 				}
 			} catch (Throwable ignored) {
+				ignored.printStackTrace();
 			}
 			((FlameURLLoader) loader).getAsmAppliers().put("flameasm:asm", ASMApplicator::apply);
 		}

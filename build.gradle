@@ -19,12 +19,13 @@ targetCompatibility = JavaVersion.VERSION_1_8
 ext {
     flameMCVersion = '0840e53c1e'
     bytecodeUtilsVersion = '455c3d13b7'
-    MCMappingsHelperVersion = 'c9a20212d2'
+    MCMappingsHelperVersion = '92190f30a4'
 }
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 
+    implementation 'com.github.GiantLuigi4:FlameMappings:8747faf305'
     implementation "com.github.GiantLuigi4:FlameMC:$flameMCVersion"
     implementation "com.github.GiantLuigi4:Bytecode-Utils:$bytecodeUtilsVersion"
     implementation "com.github.GiantLuigi4:MCMappingsHelper:$MCMappingsHelperVersion"
