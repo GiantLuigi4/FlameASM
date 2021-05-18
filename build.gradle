@@ -33,7 +33,7 @@ dependencies {
     compileOnly files('run/versions/1.16.4-flame/1.16.4-flame.jar')
     compileOnly files('run/versions/1.16.5-srg/1.16.5-srg.jar')
 
-    compileOnly files('run/flame_mods/FlameAPI-MC-1.16.4-1.0-SNAPSHOT.jar')
+//    compileOnly files('run/flame_mods/FlameAPI-MC-1.16.4-1.0-SNAPSHOT.jar')
 
     // TODO: create some form of gradle thing which minifies this into a single line
     implementation 'com.mojang:patchy:1.1'

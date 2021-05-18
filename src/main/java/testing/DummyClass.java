@@ -6,7 +6,7 @@ import net.minecraft.util.resource.ResourceName;
 import net.minecraft.util.vecmath.Matrix4;
 import net.minecraft.util.vecmath.Vector3d;
 import net.minecraft.world.blocks.BlockProperties;
-import tfc.flamemc.API.Registry;
+//import tfc.flamemc.API.Registry;
 
 //TODO: remove this
 public class DummyClass {
@@ -40,11 +40,11 @@ public class DummyClass {
 		System.out.println(BlockRegistry.AIR);
 		System.out.println(BlockRegistry.STONE_BLOCK);
 		
-		Registry.register(
-				Registry.Register.BLOCKS,
-				new ResourceName("flameasm:test_extend"),
-				new TestExtend(BlockProperties.from(BlockRegistry.STONE_BLOCK))
-		);
+//		Registry.register(
+//				Registry.Register.BLOCKS,
+//				new ResourceName("flameasm:test_extend"),
+//				new TestExtend(BlockProperties.from(BlockRegistry.STONE_BLOCK))
+//		);
 		
 		System.out.println((long)0);
 		int val = 0;
