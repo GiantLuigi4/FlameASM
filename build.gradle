@@ -16,19 +16,15 @@ repositories {
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
-ext {
-    flameMCVersion = 'ae8557a1e7'
-    bytecodeUtilsVersion = '455c3d13b7'
-    MCMappingsHelperVersion = '92190f30a4'
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 10, 'seconds'
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-
-    implementation 'com.github.GiantLuigi4:FlameMappings:8747faf305'
-    implementation "com.github.GiantLuigi4:FlameMC:$flameMCVersion"
-    implementation "com.github.GiantLuigi4:Bytecode-Utils:$bytecodeUtilsVersion"
-    implementation "com.github.GiantLuigi4:MCMappingsHelper:$MCMappingsHelperVersion"
+    implementation 'com.github.GiantLuigi4:FlameMappings:master-SNAPSHOT'
+    implementation "com.github.GiantLuigi4:FlameMC:master-SNAPSHOT"
+    implementation "com.github.GiantLuigi4:Bytecode-Utils:master-SNAPSHOT"
+    implementation "com.github.GiantLuigi4:MCMappingsHelper:master-SNAPSHOT"
 
     compileOnly files('run/versions/1.16.4-flame/1.16.4-flame.jar')
     compileOnly files('run/versions/1.16.5-srg/1.16.5-srg.jar')
